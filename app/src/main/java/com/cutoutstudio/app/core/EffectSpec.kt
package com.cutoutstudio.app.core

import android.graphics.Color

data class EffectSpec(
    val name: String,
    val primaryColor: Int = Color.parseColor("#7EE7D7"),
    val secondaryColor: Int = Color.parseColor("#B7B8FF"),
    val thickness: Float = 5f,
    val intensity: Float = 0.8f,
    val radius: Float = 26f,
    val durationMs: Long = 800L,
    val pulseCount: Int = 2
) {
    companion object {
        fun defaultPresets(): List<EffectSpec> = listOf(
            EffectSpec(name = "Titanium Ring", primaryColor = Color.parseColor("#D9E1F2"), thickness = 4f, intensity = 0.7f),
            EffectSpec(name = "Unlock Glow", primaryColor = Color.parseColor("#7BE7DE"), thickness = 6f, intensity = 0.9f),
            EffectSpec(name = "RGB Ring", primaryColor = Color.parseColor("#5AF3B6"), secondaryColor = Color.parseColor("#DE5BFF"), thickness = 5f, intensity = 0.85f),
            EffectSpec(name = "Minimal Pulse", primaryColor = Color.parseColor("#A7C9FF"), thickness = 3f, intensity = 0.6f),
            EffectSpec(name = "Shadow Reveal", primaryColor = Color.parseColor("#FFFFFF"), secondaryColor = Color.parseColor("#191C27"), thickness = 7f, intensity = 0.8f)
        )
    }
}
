@@ -1,0 +1,51 @@
+package com.cutoutstudio.app.core
+
+import android.graphics.Rect
+import android.view.WindowInsets
+
+object CutoutDetector {
+    fun detectDefault(width: Int, height: Int): CutoutGeometry {
+        val size = (minOf(width, height) * 0.18f).coerceAtLeast(110f)
+        val centerX = width / 2f
+        val centerY = height * 0.32f
+        val left = centerX - size / 2f
+        val top = centerY - size / 2f
+        val right = centerX + size / 2f
+        val bottom = centerY + size / 2f
+
+        return CutoutGeometry(
+            left = left,
+            top = top,
+            right = right,
+            bottom = bottom,
+            width = size,
+            height = size,
+            radius = size / 2f,
+            type = "center"
+        )
+    }
+
+    fun detectFromWindowInsets(windowInsets: WindowInsets?, width: Int, height: Int): CutoutGeometry {
+        val cutout = windowInsets?.displayCutout ?: return detectDefault(width, height)
+
+        val rect: Rect = cutout.boundingRect
+        val safeLeft = rect.left.toFloat().coerceAtLeast(0f)
+        val safeTop = rect.top.toFloat().coerceAtLeast(0f)
+        val safeRight = rect.right.toFloat().coerceAtMost(width.toFloat())
+        val safeBottom = rect.bottom.toFloat().coerceAtMost(height.toFloat())
+
+        val geometryWidth = (safeRight - safeLeft).coerceAtLeast(80f)
+        val geometryHeight = (safeBottom - safeTop).coerceAtLeast(80f)
+
+        return CutoutGeometry(
+            left = safeLeft,
+            top = safeTop,
+            right = safeRight,
+            bottom = safeBottom,
+            width = geometryWidth,
+            height = geometryHeight,
+            radius = minOf(geometryWidth, geometryHeight) / 2f,
+            type = if (geometryWidth > geometryHeight) "pill" else "circle"
+        )
+    }
+}

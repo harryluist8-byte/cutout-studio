@@ -1,0 +1,89 @@
+package com.cutoutstudio.app.ui
+
+import android.content.Context
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.RectF
+import android.util.AttributeSet
+import android.view.View
+import com.cutoutstudio.app.core.CutoutGeometry
+import com.cutoutstudio.app.core.EffectSpec
+
+class CutoutOverlayView @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null
+) : View(context, attrs) {
+
+    private var geometry: CutoutGeometry = CutoutGeometry(0f, 0f, 0f, 0f, 0f, 0f, 0f)
+    private var effect: EffectSpec = EffectSpec.defaultPresets().first()
+
+    fun setGeometry(geometry: CutoutGeometry) {
+        this.geometry = geometry
+        invalidate()
+    }
+
+    fun setEffect(effect: EffectSpec) {
+        this.effect = effect
+        invalidate()
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        super.onDraw(canvas)
+
+        if (geometry.width <= 0f || geometry.height <= 0f) {
+            return
+        }
+
+        val rect = RectF(
+            geometry.left,
+            geometry.top,
+            geometry.right,
+            geometry.bottom
+        )
+
+        val outerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0xFF000000.toInt()
+            style = Paint.Style.FILL
+        }
+        canvas.drawRoundRect(rect, geometry.radius, geometry.radius, outerPaint)
+
+        val borderStroke = (effect.thickness + 1.5f) * 1.2f
+        val glowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = effect.primaryColor
+            style = Paint.Style.STROKE
+            strokeWidth = borderStroke
+            alpha = (255 * effect.intensity).toInt().coerceIn(40, 255)
+        }
+        canvas.drawRoundRect(rect, geometry.radius, geometry.radius, glowPaint)
+
+        val secondaryPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = effect.secondaryColor
+            style = Paint.Style.STROKE
+            strokeWidth = borderStroke / 2f
+            alpha = (180 * effect.intensity).toInt().coerceIn(20, 180)
+        }
+        val inset = 12f
+        val secondaryRect = RectF(
+            rect.left + inset,
+            rect.top + inset,
+            rect.right - inset,
+            rect.bottom - inset
+        )
+        canvas.drawRoundRect(secondaryRect, geometry.radius, geometry.radius, secondaryPaint)
+
+        val pulsePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = effect.primaryColor
+            style = Paint.Style.STROKE
+            strokeWidth = 2f
+            alpha = 120
+        }
+        val pulseInset = 18f + (effect.intensity * 16f)
+        val pulseRect = RectF(
+            rect.left + pulseInset,
+            rect.top + pulseInset,
+            rect.right - pulseInset,
+            rect.bottom - pulseInset
+        )
+        canvas.drawRoundRect(pulseRect, geometry.radius, geometry.radius, pulsePaint)
+    }
+}
